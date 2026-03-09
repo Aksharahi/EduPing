@@ -3,7 +3,7 @@ import pandas as pd
 import tempfile
 import time
 from eduping_backend import eduping_backend as core
-from auth import register_user, login_user, get_user_by_email, update_whatsapp_number
+from auth import register_user, login_user, get_user_by_email, update_whatsapp_number, update_full_name
 
 
 # =========================
@@ -23,16 +23,23 @@ if "authenticated" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = None
 if "current_page" not in st.session_state:
-    st.session_state.current_page = "login"
-# Custom CSS for better UI
+    st.session_state.current_page = "home"
+# Custom CSS – richer, bolder palette
 st.markdown("""
     <style>
+        .stApp {
+            background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 50%, #e9d5ff 100%);
+        }
         .main {
             padding-top: 2rem;
+            background: transparent;
+        }
+        .block-container {
+            background: transparent;
         }
         .stButton>button {
             width: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #4338ca 0%, #6d28d9 50%, #7e22ce 100%);
             color: white;
             font-weight: bold;
             font-size: 1.1rem;
@@ -43,37 +50,268 @@ st.markdown("""
         }
         .stButton>button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(67, 56, 202, 0.55);
         }
         .auth-container {
             max-width: 400px;
             margin: 2rem auto;
             padding: 2rem;
             border-radius: 15px;
-            background: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: #ffffff;
+            box-shadow: 0 8px 24px rgba(67, 56, 202, 0.15);
         }
         .uploadedFile {
-            border: 2px dashed #667eea;
+            border: 2px dashed #5b21b6;
             border-radius: 10px;
             padding: 1rem;
             margin: 1rem 0;
         }
         .status-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #4338ca 0%, #7c3aed 100%);
             color: white;
             padding: 1.5rem;
             border-radius: 15px;
             margin: 1rem 0;
         }
         h1 {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #4338ca 0%, #7c3aed 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        .hero-box {
+            background: linear-gradient(135deg, #3730a3 0%, #5b21b6 50%, #6d28d9 100%);
+            color: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            margin: 2rem 0;
+            text-align: center;
+            box-shadow: 0 12px 48px rgba(91, 33, 182, 0.45);
+        }
+        .feature-card {
+            background: linear-gradient(135deg, #ede9fe 0%, #e9d5ff 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 4px solid #6d28d9;
+        }
+        .about-section {
+            background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border: 1px solid #a78bfa;
+        }
+        /* Go to profile button: same proportions as Browse files (compact horizontal bar) */
+        .profile-nav-bar .stButton>button {
+            height: 38px !important;
+            min-height: 38px !important;
+            padding: 0.25rem 1rem !important;
+            font-size: 0.875rem !important;
+            line-height: 1.2 !important;
+            white-space: nowrap;
+        }
     </style>
 """, unsafe_allow_html=True)
+
+
+# =========================
+# HOME PAGE (Landing + About snippet)
+# =========================
+def show_home_page():
+    """Landing page with hero, features, about snippet, and auth CTAs"""
+    st.markdown("""
+        <div class="hero-box">
+            <h1 style="color: white; font-size: 3rem; margin-bottom: 0.5rem;">📚 EduPing</h1>
+            <p style="font-size: 1.3rem; opacity: 0.95;">AI-Powered Student Notifications</p>
+            <p style="font-size: 1rem; opacity: 0.9; max-width: 600px; margin: 1rem auto;">
+                Turn announcements and documents into clear, student-friendly WhatsApp messages. 
+                Keep your class updated without the hassle.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # CTA buttons
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    with col1:
+        if st.button("🔐 Login", use_container_width=True):
+            st.session_state.current_page = "login"
+            st.rerun()
+    with col2:
+        if st.button("📝 Sign Up", use_container_width=True):
+            st.session_state.current_page = "signup"
+            st.rerun()
+    with col3:
+        if st.button("ℹ️ About", use_container_width=True):
+            st.session_state.current_page = "about"
+            st.rerun()
+    with col4:
+        if st.session_state.authenticated and st.button("📊 Dashboard", use_container_width=True):
+            st.session_state.current_page = "main"
+            st.rerun()
+    
+    st.markdown("---")
+    st.markdown("### ✨ What EduPing Does")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown("""
+        <div class="feature-card">
+            <strong>📄 Upload & Summarize</strong><br>
+            Upload PDFs, DOCX, or text. AI turns them into clear, short summaries students can understand.
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
+        <div class="feature-card">
+            <strong>📱 WhatsApp Delivery</strong><br>
+            Send notifications via WhatsApp in one go. Use your number; we handle the rest.
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown("""
+        <div class="feature-card">
+            <strong>👥 Batch & Lists</strong><br>
+            Upload a list of phone numbers (CSV/TXT). We send to everyone without manual copying.
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("""
+    <div class="about-section">
+        <strong>About EduPing</strong><br>
+        EduPing helps educators and admins send exam dates, placement drives, and other updates 
+        to students quickly and clearly. Messages are rewritten in simple language so every student stays in the loop.
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("ℹ️ Read more on About page"):
+        st.session_state.current_page = "about"
+        st.rerun()
+
+
+# =========================
+# ABOUT PAGE
+# =========================
+def show_about_page():
+    """Dedicated About page: mission, how it works, tech, credits"""
+    st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="font-size: 2.5rem;">ℹ️ About EduPing</h1>
+            <p style="color: #374151;">Mission, features, and how it works</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 🎯 Mission")
+    st.markdown("""
+    EduPing makes it easy to keep students informed. Instead of long PDFs or confusing notices, 
+    educators upload content once; our AI creates short, clear summaries and sends them via WhatsApp 
+    to a list of numbers. Perfect for exam dates, placement drives, fee reminders, and general announcements.
+    """)
+    
+    st.markdown("### 🔄 How It Works")
+    st.markdown("""
+    1. **Create an account** and add your WhatsApp number (used to send messages).  
+    2. **Upload two files**: one with phone numbers (CSV/TXT/PDF/DOCX), one with the message or document.  
+    3. **AI summarizes** the content into student-friendly language.  
+    4. **Log in to WhatsApp Web** once (OTP on your phone) so we can send on your behalf.  
+    5. **Messages go out** in the background to all numbers in your list.
+    """)
+    
+    st.markdown("### 🛠 Technology")
+    st.markdown("""
+    - **Frontend:** Streamlit  
+    - **Backend:** Python, Selenium (WhatsApp Web automation)  
+    - **AI:** Local summarization for clear, readable messages  
+    - **Auth & data:** SQLite, bcrypt for secure login  
+    - **Files:** CSV, TXT, PDF, DOCX supported for both numbers and messages
+    """)
+    
+    st.markdown("### 📌 Notes")
+    st.markdown("""
+    - Keep the browser window open while sending; do not close it until the run finishes.  
+    - Use phone numbers with country code (e.g. 91 for India).  
+    - EduPing is for educational and official use; respect WhatsApp’s terms of service.
+    """)
+    
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        if st.button("🏠 Back to Home", use_container_width=True):
+            st.session_state.current_page = "home"
+            st.rerun()
+    with col2:
+        if not st.session_state.authenticated and st.button("🔐 Login", use_container_width=True):
+            st.session_state.current_page = "login"
+            st.rerun()
+    with col3:
+        if st.session_state.authenticated and st.button("📊 Dashboard", use_container_width=True):
+            st.session_state.current_page = "main"
+            st.rerun()
+
+
+# =========================
+# PROFILE PAGE (logged-in only)
+# =========================
+def show_profile_page():
+    """User profile: view and edit name, email (read-only), WhatsApp"""
+    st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="font-size: 2.5rem;">👤 Profile</h1>
+            <p style="color: #374151;">Your account information</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    u = st.session_state.user_data
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.markdown("**Full name**")
+        st.info(u.get("full_name") or "—")
+        st.markdown("**Email**")
+        st.info(u.get("email") or "—")
+        st.markdown("**WhatsApp number**")
+        st.info(u.get("whatsapp_number") or "—")
+    with col2:
+        with st.form("profile_form"):
+            st.markdown("### Edit profile")
+            new_name = st.text_input("Full name", value=u.get("full_name") or "", placeholder="Your display name")
+            new_whatsapp = st.text_input(
+                "WhatsApp number",
+                value=u.get("whatsapp_number") or "",
+                placeholder="919876543210 (with country code)"
+            )
+            sub1, sub2 = st.columns(2)
+            with sub1:
+                submitted = st.form_submit_button("💾 Save changes")
+            with sub2:
+                cancel = st.form_submit_button("Cancel")
+            if submitted:
+                if not new_name.strip():
+                    st.error("Name cannot be empty.")
+                elif not new_whatsapp or not new_whatsapp.replace(" ", "").replace("+", "").isdigit():
+                    st.error("WhatsApp number must contain only digits (with optional + or spaces).")
+                else:
+                    r1 = update_full_name(u["email"], new_name.strip())
+                    r2 = update_whatsapp_number(u["email"], new_whatsapp.replace(" ", "").replace("+", ""))
+                    if r1.get("success") and r2.get("success"):
+                        st.session_state.user_data["full_name"] = new_name.strip()
+                        st.session_state.user_data["whatsapp_number"] = new_whatsapp.replace(" ", "").replace("+", "")
+                        st.success("Profile updated successfully!")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        for r in (r1, r2):
+                            if not r.get("success"):
+                                st.error(r.get("message", "Update failed"))
+            if cancel:
+                st.session_state.current_page = "main"
+                st.rerun()
+    
+    st.markdown("---")
+    if st.button("⚙️ Open full settings"):
+        st.session_state.current_page = "settings"
+        st.rerun()
+    if st.button("📊 Back to Dashboard"):
+        st.session_state.current_page = "main"
+        st.rerun()
 
 
 # =========================
@@ -87,7 +325,7 @@ def show_login_page():
         st.markdown("""
             <div style="text-align: center; margin-bottom: 2rem;">
                 <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">📚 EduPing</h1>
-                <p style="font-size: 1rem; color: #666;">AI-Powered Student Notifications</p>
+                <p style="font-size: 1rem; color: #374151;">AI-Powered Student Notifications</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -117,6 +355,11 @@ def show_login_page():
             if st.button("Sign Up", use_container_width=True):
                 st.session_state.current_page = "signup"
                 st.rerun()
+        
+        st.markdown("---")
+        if st.button("🏠 Back to Home", use_container_width=True):
+            st.session_state.current_page = "home"
+            st.rerun()
 
 
 def show_signup_page():
@@ -127,7 +370,7 @@ def show_signup_page():
         st.markdown("""
             <div style="text-align: center; margin-bottom: 2rem;">
                 <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">📚 EduPing</h1>
-                <p style="font-size: 1rem; color: #666;">Join Our Community</p>
+                <p style="font-size: 1rem; color: #374151;">Join Our Community</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -157,6 +400,11 @@ def show_signup_page():
             if st.button("Back to Login", use_container_width=True):
                 st.session_state.current_page = "login"
                 st.rerun()
+        
+        st.markdown("---")
+        if st.button("🏠 Back to Home", use_container_width=True):
+            st.session_state.current_page = "home"
+            st.rerun()
 
 
 # =========================
@@ -164,33 +412,42 @@ def show_signup_page():
 # =========================
 def show_main_page():
     """Display main application"""
-    # Sidebar with user info and logout
+    # Sidebar: nav + user info + logout
     with st.sidebar:
         st.markdown("### 👤 Account")
-        st.markdown(f"**{st.session_state.user_data['full_name']}**")
-        st.caption(st.session_state.user_data['email'])
-        
-        # Display current WhatsApp
+        st.markdown(f"**{st.session_state.user_data.get('full_name') or 'User'}**")
+        st.caption(st.session_state.user_data.get('email', ''))
+        st.markdown(f"📱 `{st.session_state.user_data.get('whatsapp_number', '')}`")
         st.markdown("---")
-        st.markdown(f"📱 **WhatsApp:** `{st.session_state.user_data['whatsapp_number']}`")
-        
-        if st.button("⚙️ Update WhatsApp Number"):
+        st.markdown("**Navigate**")
+        if st.button("🏠 Home", use_container_width=True):
+            st.session_state.current_page = "home"
+            st.rerun()
+        if st.button("ℹ️ About", use_container_width=True):
+            st.session_state.current_page = "about"
+            st.rerun()
+        if st.button("👤 Profile", use_container_width=True):
+            st.session_state.current_page = "profile"
+            st.rerun()
+        if st.button("📊 Dashboard", use_container_width=True):
+            st.session_state.current_page = "main"
+            st.rerun()
+        if st.button("⚙️ Settings", use_container_width=True):
             st.session_state.current_page = "settings"
             st.rerun()
-        
         st.markdown("---")
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.authenticated = False
             st.session_state.user_data = None
-            st.session_state.current_page = "login"
+            st.session_state.current_page = "home"
             st.rerun()
     
     # Header
     st.markdown("""
         <div style="text-align: center; margin-bottom: 2rem;">
             <h1 style="font-size: 3rem; margin-bottom: 0.5rem;">📚 EduPing</h1>
-            <p style="font-size: 1.2rem; color: #666;">AI-Powered Student Notifications</p>
-            <p style="color: #999;">Keep your students updated with clear, understandable messages</p>
+            <p style="font-size: 1.2rem; color: #374151;">AI-Powered Student Notifications</p>
+            <p style="color: #4b5563;">Keep your students updated with clear, understandable messages</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -259,7 +516,7 @@ def show_main_page():
 
             # Success message with better styling
             st.markdown("""
-                <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 1rem; border-radius: 5px; margin: 1rem 0;">
+                <div style="background: #d1fae5; border-left: 4px solid #059669; padding: 1rem; border-radius: 5px; margin: 1rem 0;">
                     <strong>✅ Files uploaded successfully!</strong>
                 </div>
             """, unsafe_allow_html=True)
@@ -429,10 +686,29 @@ def show_settings_page():
 if not st.session_state.authenticated:
     if st.session_state.current_page == "signup":
         show_signup_page()
-    else:
+    elif st.session_state.current_page == "login":
         show_login_page()
+    elif st.session_state.current_page == "about":
+        show_about_page()
+    else:
+        show_home_page()
 else:
+    # Top bar: "Go to profile" next to sidebar (>>) – same size as Browse files button
+    st.markdown("<div class='profile-nav-bar'>", unsafe_allow_html=True)
+    nav_col, _ = st.columns([2, 7])
+    with nav_col:
+        if st.button("👤 Go to profile", use_container_width=True):
+            st.session_state.current_page = "profile"
+            st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: -0.5rem;'></div>", unsafe_allow_html=True)
     if st.session_state.current_page == "settings":
         show_settings_page()
+    elif st.session_state.current_page == "profile":
+        show_profile_page()
+    elif st.session_state.current_page == "home":
+        show_home_page()
+    elif st.session_state.current_page == "about":
+        show_about_page()
     else:
         show_main_page()

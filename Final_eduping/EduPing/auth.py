@@ -185,6 +185,26 @@ def update_whatsapp_number(email: str, whatsapp_number: str) -> dict:
         return {"success": False, "message": f"Update failed: {str(e)}"}
 
 
+def update_full_name(email: str, full_name: str) -> dict:
+    """Update user's full name"""
+    if not full_name or not full_name.strip():
+        return {"success": False, "message": "Name cannot be empty"}
+    
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE users SET full_name = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE email = ?
+        """, (full_name.strip(), email))
+        conn.commit()
+        conn.close()
+        
+        return {"success": True, "message": "Name updated successfully"}
+    except Exception as e:
+        return {"success": False, "message": f"Update failed: {str(e)}"}
+
+
 def get_all_users() -> list:
     """Get all registered users (for admin purposes)"""
     try:
