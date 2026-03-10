@@ -1,7 +1,0 @@
-pandas
-transformers
-selenium
-webdriver-manager
-streamlit
-
-
